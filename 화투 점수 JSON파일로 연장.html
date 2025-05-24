@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>플레이어 라운드 추적기</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 40px;
+      background: #f9f9f9;
+      color: #333;
+    }
+    h1, h2 {
+      color: #2c3e50;
+    }
+    table {
+      width: 100%;
+      margin-bottom: 30px;
+      border-collapse: collapse;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 12px 16px;
+      text-align: center;
+    }
+    th {
+      background: #f0f0f0;
+    }
+    .positive {
+      color: #27ae60;
+      font-weight: bold;
+    }
+    .negative {
+      color: #e74c3c;
+      font-weight: bold;
+    }
+    .controls, form {
+      margin-bottom: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+    .controls input[type="text"],
+    form input[type="number"] {
+      padding: 10px 14px;
+      font-size: 16px;
+      width: 100px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    button {
+      padding: 10px 16px;
+      font-size: 16px;
+      border: none;
+      background: #3498db;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: #2980b9;
+    }
+    label {
+      margin-right: 10px;
+    }
+    #chartContainer {
+      margin-top: 40px;
+    }
+    canvas {
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    #fileList {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>게임 기록</h1>
+
+  <div class="controls">
+    <div id="playerNames"></div>
+    <button onclick="updatePlayerNames()">이름 수정</button>
+    <button onclick="addPlayer()">유저 추가</button>
+    <button onclick="resetGame()">게임 리셋</button>
+    <button onclick="saveAsFile()">JSON 저장</button>
+    <input type="file" id="fileInput" accept=".json" onchange="loadFromFile(event)">
+  </div>
+
+  <div id="fileList"></div>
+
+  <table id="roundTable">
+    <thead>
+      <tr id="tableHeader">
+        <th>라운드</th>
+      </tr>
+    </thead>
+    <tbody id="rounds"></tbody>
+    <tfoot>
+      <tr id="totalRow">
+        <td><strong>총합</strong></td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <h2>라운드 추가 (단위: 100)</h2>
+  <form id="roundForm">
+    <div id="roundInputs"></div>
+    <button type="submit">추가</button>
+  </form>
+
+  <div id="chartContainer">
+    <h2>총합 그래프</h2>
+    <canvas id="scoreChart" height="100"></canvas>
+  </div>
+
+  <script>
+    // 기존 변수는 생략
+
+    function saveAsFile() {
+      const data = { players, totals, roundsHistory, roundCount };
+      const json = JSON.stringify(data, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const now = new Date();
+      const timestamp = now.toISOString().replace(/[:.]/g, '-');
+      const filename = `gameData_${timestamp}.json`;
+
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      const list = document.getElementById('fileList');
+      const entry = document.createElement('div');
+      entry.textContent = `저장됨: ${filename}`;
+      list.appendChild(entry);
+    }
+
+    function loadFromFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const data = JSON.parse(e.target.result);
+        players = data.players;
+        totals = data.totals;
+        roundCount = data.roundCount;
+        roundsHistory.length = 0;
+        data.roundsHistory.forEach(r => roundsHistory.push(r));
+
+        document.getElementById('rounds').innerHTML = '';
+        initializeUI();
+
+        roundsHistory.forEach((round, idx) => {
+          const row = document.createElement('tr');
+          let html = `<td>${idx + 1}</td>`;
+          players.forEach(name => {
+            html += `<td class="${round[name] >= 0 ? 'positive' : 'negative'}">${round[name]}</td>`;
+          });
+          html += '<td><button onclick="removeRound(this)">삭제</button></td>';
+          row.innerHTML = html;
+          document.getElementById('rounds').appendChild(row);
+        });
+
+        updateChart();
+        updateTotalRow();
+        alert('파일에서 게임을 불러왔습니다.');
+      };
+      reader.readAsText(file);
+    }
+  </script>
+</body>
+</html>
