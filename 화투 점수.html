@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>플레이어 라운드 추적기</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    table, th, td { border: 1px solid black; border-collapse: collapse; padding: 8px; }
+    .positive { color: green; }
+    .negative { color: red; }
+  </style>
+</head>
+<body>
+  <h1>게임 기록</h1>
+  <table id="roundTable">
+    <thead>
+      <tr>
+        <th>라운드</th>
+        <th>A</th>
+        <th>B</th>
+        <th>C</th>
+      </tr>
+    </thead>
+    <tbody id="rounds"></tbody>
+    <tfoot>
+      <tr>
+        <td><strong>총합</strong></td>
+        <td id="totalA">0</td>
+        <td id="totalB">0</td>
+        <td id="totalC">0</td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <h2>라운드 추가</h2>
+  <form id="roundForm">
+    <label>A: <input type="number" name="a" required></label>
+    <label>B: <input type="number" name="b" required></label>
+    <label>C: <input type="number" name="c" required></label>
+    <button type="submit">추가</button>
+  </form>
+
+  <script>
+    let roundCount = 0;
+    let totals = { A: 0, B: 0, C: 0 };
+
+    document.getElementById('roundForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const form = e.target;
+      const a = parseInt(form.a.value);
+      const b = parseInt(form.b.value);
+      const c = parseInt(form.c.value);
+
+      roundCount++;
+
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${roundCount}</td>
+        <td class="${a >= 0 ? 'positive' : 'negative'}">${a}</td>
+        <td class="${b >= 0 ? 'positive' : 'negative'}">${b}</td>
+        <td class="${c >= 0 ? 'positive' : 'negative'}">${c}</td>
+      `;
+      document.getElementById('rounds').appendChild(row);
+
+      totals.A += a;
+      totals.B += b;
+      totals.C += c;
+
+      updateTotals();
+      form.reset();
+    });
+
+    function updateTotals() {
+      for (let player of ['A', 'B', 'C']) {
+        const el = document.getElementById('total' + player);
+        el.textContent = totals[player];
+        el.className = totals[player] >= 0 ? 'positive' : 'negative';
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>플레이어 라운드 추적기</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    table, th, td { border: 1px solid black; border-collapse: collapse; padding: 8px; }
+    .positive { color: green; }
+    .negative { color: red; }
+    .controls { margin-bottom: 20px; }
+    input[type="text"] { width: 80px; }
+  </style>
+</head>
+<body>
+  <h1>게임 기록</h1>
+
+  <div class="controls">
+    <div id="playerNames"></div>
+    <button onclick="updatePlayerNames()">이름 수정</button>
+    <button onclick="addPlayer()">유저 추가</button>
+    <button onclick="resetGame()">게임 리셋</button>
+  </div>
+
+  <table id="roundTable">
+    <thead>
+      <tr id="tableHeader">
+        <th>라운드</th>
+      </tr>
+    </thead>
+    <tbody id="rounds"></tbody>
+    <tfoot>
+      <tr id="totalRow">
+        <td><strong>총합</strong></td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <h2>라운드 추가</h2>
+  <form id="roundForm">
+    <div id="roundInputs"></div>
+    <button type="submit">추가</button>
+  </form>
+
+  <script>
+    let players = ['A', 'B', 'C'];
+    let totals = {};
+    let roundCount = 0;
+
+    function initializeUI() {
+      updateNameInputs();
+      updateTableHeaders();
+      updateTotalRow();
+      updateRoundForm();
+    }
+
+    function updateNameInputs() {
+      const nameDiv = document.getElementById('playerNames');
+      nameDiv.innerHTML = '';
+      players.forEach((name, idx) => {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = name;
+        input.dataset.index = idx;
+        nameDiv.appendChild(input);
+      });
+    }
+
+    function updatePlayerNames() {
+      const inputs = document.querySelectorAll('#playerNames input');
+      inputs.forEach(input => {
+        players[input.dataset.index] = input.value;
+      });
+      updateTableHeaders();
+      updateTotalRow();
+      updateRoundForm();
+    }
+
+    function updateTableHeaders() {
+      const header = document.getElementById('tableHeader');
+      header.innerHTML = '<th>라운드</th>';
+      players.forEach(name => {
+        const th = document.createElement('th');
+        th.textContent = name;
+        header.appendChild(th);
+      });
+      header.appendChild(document.createElement('th')).textContent = '작업';
+    }
+
+    function updateTotalRow() {
+      const row = document.getElementById('totalRow');
+      row.innerHTML = '<td><strong>총합</strong></td>';
+      players.forEach(name => {
+        if (!(name in totals)) totals[name] = 0;
+        const td = document.createElement('td');
+        td.id = 'total-' + name;
+        td.textContent = totals[name];
+        td.className = totals[name] >= 0 ? 'positive' : 'negative';
+        row.appendChild(td);
+      });
+    }
+
+    function updateRoundForm() {
+      const container = document.getElementById('roundInputs');
+      container.innerHTML = '';
+      players.forEach(name => {
+        const label = document.createElement('label');
+        label.textContent = name + ': ';
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.name = name;
+        input.required = false;
+        label.appendChild(input);
+        container.appendChild(label);
+      });
+    }
+
+    document.getElementById('roundForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const values = {};
+      let totalSum = 0;
+      let emptyCount = 0;
+      let lastEmpty = null;
+
+      players.forEach(name => {
+        const val = formData.get(name);
+        if (val === '' || val === null) {
+          emptyCount++;
+          lastEmpty = name;
+        } else {
+          values[name] = parseInt(val);
+          totalSum += values[name];
+        }
+      });
+
+      if (emptyCount > 1) {
+        alert('최대 한 명의 입력만 비워둘 수 있습니다.');
+        return;
+      }
+
+      if (emptyCount === 1) {
+        values[lastEmpty] = -totalSum;
+        totalSum += values[lastEmpty];
+      }
+
+      if (totalSum !== 0) {
+        alert('모든 유저의 금액 합이 0이어야 합니다.');
+        return;
+      }
+
+      addRound(values);
+      e.target.reset();
+    });
+
+    function addRound(values) {
+      roundCount++;
+      const row = document.createElement('tr');
+      let html = `<td>${roundCount}</td>`;
+      players.forEach(name => {
+        const val = values[name];
+        html += `<td class="${val >= 0 ? 'positive' : 'negative'}">${val}</td>`;
+        totals[name] += val;
+      });
+      html += '<td><button onclick="removeRound(this)">삭제</button></td>';
+      row.innerHTML = html;
+      document.getElementById('rounds').appendChild(row);
+      updateTotalRow();
+    }
+
+    function removeRound(button) {
+      const row = button.parentElement.parentElement;
+      const tds = row.querySelectorAll('td');
+      players.forEach((name, idx) => {
+        const val = parseInt(tds[idx + 1].textContent);
+        totals[name] -= val;
+      });
+      row.remove();
+      updateTotalRow();
+    }
+
+    function addPlayer() {
+      const newName = prompt('새 유저 이름을 입력하세요:');
+      if (newName && !players.includes(newName)) {
+        players.push(newName);
+        totals[newName] = 0;
+        initializeUI();
+      }
+    }
+
+    function resetGame() {
+      roundCount = 0;
+      totals = {};
+      document.getElementById('rounds').innerHTML = '';
+      initializeUI();
+    }
+
+    initializeUI();
+  </script>
+</body>
+</html>
