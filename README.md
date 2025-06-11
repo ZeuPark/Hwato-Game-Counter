@@ -97,3 +97,4 @@ Simply open `index.html` in any modern browser — no installation or backend re
 
 Built by [ZeuPark](https://github.com/ZeuPark) to solve a real problem in a real game.  
 Because in 화투, keeping track of money should be part of the fun — not the fight.
+https://zeupark.github.io/Hwato-Game-Counter/ -> link for those who want to try. 
